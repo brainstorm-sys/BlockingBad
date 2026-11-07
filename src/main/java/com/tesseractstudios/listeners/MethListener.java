@@ -49,6 +49,12 @@ public class MethListener implements Listener {
     private final Map<UUID, Double> damageStorage = new HashMap<>();
     private final Map<UUID, Double> playerSave = new HashMap<>();
     private final Map<UUID, Long> methCooldwn = new HashMap<>();
+    private final Map<UUID, Long> abilityCooldown = new HashMap<>();
+    private final Map<UUID, Double> calculatedDamage = new HashMap<>();
+
+    //exp
+
+    private final Map<UUID, Integer> methCount = new HashMap<>();
 
 
     // -- Custom Crafting Logic wa--
@@ -311,6 +317,8 @@ public class MethListener implements Listener {
         Bukkit.getLogger().info("Cat 1: Consume Event Triggered!");
         Player p = e.getPlayer();
         ItemStack methItem = p.getInventory().getItemInMainHand();
+        UUID playerId = p.getUniqueId();
+        long currentTime = System.currentTimeMillis();
 
 
         // adding potion randomnessw
@@ -321,6 +329,32 @@ public class MethListener implements Listener {
 
         if (methItem.getType() == Material.AIR) return;
         if (itemManager.getItemId(methItem).equals("n_methamphetamine")){
+
+
+            // --- test logic for meth counting ---
+            long fixedCooldown = 10000;
+            Long previousTime = abilityCooldown.get(playerId);
+
+            if (previousTime == null) {
+                abilityCooldown.put(playerId, currentTime);
+            }
+
+            else if (currentTime - previousTime < 10) {
+                if (methCount.get(playerId) == null){
+                    methCount.put(playerId, 0);
+                }
+                else {
+                    Integer previousCount = methCount.get(playerId);
+                    Integer operationCount = previousCount + 1;
+                    methCount.put(playerId, operationCount);
+                }
+
+                abilityCooldown.put(playerId, currentTime);
+            } else {
+                abilityCooldown.put(playerId, currentTime);
+            }
+
+            // --- test
 
             p.setCooldown(itemManager.create("n_methamphetamine"), 40);
 
@@ -379,7 +413,41 @@ public class MethListener implements Listener {
         Double damageValue = e.getDamage();
 
         if (uuidStore.containsKey(playerId)){
-            e.setCancelled(true);
+
+            if (methCount.get(playerId) == null || methCount.get(playerId) == 1 || methCount.get(playerId) == 2 || methCount.get(playerId) == 3) {
+                e.setCancelled(true);
+                double damage = e.getDamage();
+                calculatedDamage.put(playerId, damage);
+            }
+
+            else if (methCount.get(playerId) == 4){
+                Double storedDamage = e.getDamage();
+                Double newDamage = storedDamage*20/100 ;
+                e.setDamage(newDamage);
+                calculatedDamage.put(playerId, 100 - newDamage);
+            }
+
+            else if (methCount.get(playerId) == 5){
+                Double storedDamage = e.getDamage();
+                Double newDamage = storedDamage*50/100 ;
+                e.setDamage(newDamage);
+                double oldCalculatedDamage = calculatedDamage.get(playerId);
+                calculatedDamage.put(playerId, 100 -  (newDamage + oldCalculatedDamage));
+            }
+
+            else if (methCount.get(playerId) == 6){
+                Double storedDamage = e.getDamage();
+                Double newDamage = storedDamage*80/100 ;
+                e.setDamage(newDamage);
+                double oldCalculatedDamage = calculatedDamage.get(playerId);
+                calculatedDamage.put(playerId, 100 -  (newDamage + oldCalculatedDamage));
+            }
+
+            else {
+                damagedPlayer.damage(damageValue);
+            }
+
+
             // ok im gonna try some genius stuff, may look not neat afs
 
 
@@ -393,15 +461,12 @@ public class MethListener implements Listener {
             } else {
 
                 damageStorage.put(playerId, damageValue);
-
-
                 new BukkitRunnable(){
                     @Override
                     public void run(){
                         Bukkit.getLogger().info("Anti-Damage ended.");
-                        Double getDamage = damageStorage.get(playerId);
                         uuidStore.remove(playerId);
-                        damagedPlayer.damage(getDamage);
+                        damagedPlayer.damage(calculatedDamage.get(playerId));
                         damageStorage.remove(playerId);
                         this.cancel();
                     }
@@ -415,6 +480,22 @@ public class MethListener implements Listener {
         }
 
     }
+
+    // meth counter, still on beta.
+
+    @EventHandler
+    public void onConsumeMeth(PlayerItemConsumeEvent e){
+        Player p = e.getPlayer();
+        UUID playerId = p.getUniqueId();
+        ItemStack mainHandItem = p.getInventory().getItemInMainHand();
+        Integer counts = methCount.get(playerId);
+
+        if(!(itemManager.getItemId(mainHandItem).equals("n_methamphetamine"))) return;
+
+    }
+
+
+
 // uhh fixing sound:
 
     @EventHandler
