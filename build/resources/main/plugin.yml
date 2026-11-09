@@ -1,6 +1,0 @@
-name: blockingbad
-version: '1.0-SNAPSHOT'
-
-main: com.tesseractstudios.BlockingBad
-api-version: '26.3'
-load: POSTWORLD
