@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -59,6 +60,7 @@ public class MethListener implements Listener {
     private final Map<UUID, Long> damageCooldown = new HashMap<>();
     private final Map<UUID, BukkitTask> damageTask = new HashMap<>();
     private final Map<UUID, Long> cooldownCheck = new HashMap<>();
+    private final Map<UUID, Boolean> leaveTrue = new HashMap<>();
 
 
     // -- Custom Crafting Logic wa--
@@ -69,17 +71,10 @@ public class MethListener implements Listener {
         Bukkit.getLogger().info("Join event detected");
         Player p = e.getPlayer();
         UUID playerUUID = p.getUniqueId();
-        Double getDoubleTest = playerSave.get(playerUUID);
 
-        if (!(playerSave.containsKey(playerUUID))) return;
+        if (calculatedDamage.get(playerUUID) != null) return;
+        methDamage(p);
 
-        new BukkitRunnable(){
-            public void run(){
-                Bukkit.getLogger().info("Join damage applied");
-                p.damage(getDoubleTest);
-                playerSave.remove(playerUUID);
-            }
-        }.runTaskLater(plugin, 20L);
     }
 
     @EventHandler
@@ -90,7 +85,8 @@ public class MethListener implements Listener {
 
         if(!(uuidStore.containsKey(playerID))) return;
         Bukkit.getLogger().info("Player uuid get done");
-        playerSave.put(playerID, damageStorage.get(playerID));
+        calculatedDamage.put(playerID, calculatedDamage.get(playerID));
+        damageCooldown.put(playerID, damageCooldown.get(playerID));
     }
 
     @EventHandler
@@ -456,36 +452,6 @@ public class MethListener implements Listener {
                 e.setCancelled(false);
             }
 
-
-            // ok im gonna try some genius stuff, may look not neat afs
-
-
-            /*Bukkit.getLogger().info("Anti Damage Started.");
-
-            if (e.getCause() == EntityDamageEvent.DamageCause.CUSTOM) return;
-
-            if (damageStorage.get(playerId) != null) {
-                Double finalValue = damageValue + damageStorage.get(playerId);
-                damageStorage.put(playerId ,finalValue);
-            } else {
-
-                damageStorage.put(playerId, damageValue);
-                new BukkitRunnable(){
-                    @Override
-                    public void run(){
-                        Bukkit.getLogger().info("Anti-Damage ended.");
-                        uuidStore.remove(playerId);
-                        damagedPlayer.damage(calculatedDamage.get(playerId));
-                        damageStorage.remove(playerId);
-                        this.cancel();
-                    }
-                }.runTaskLater(plugin, 200L);
-
-
-            }
-
-            Bukkit.getLogger().info("Got player ID and set damage.");*/
-
         }
 
     }
@@ -581,6 +547,15 @@ public class MethListener implements Listener {
 
         p.playSound(Sound.sound(Key.key("blockingbad", "crystal_sniff"), Sound.Source.MASTER, 1, 1));
         methSoundCooldwn.put(playerID, currentTime);
+    }
+
+    @EventHandler
+    public void onDeath (PlayerDeathEvent e){
+        Player p = e.getPlayer();
+        UUID playerId = p.getUniqueId();
+
+        if (calculatedDamage.get(playerId) != null) return;
+        damageTask.remove(playerId);
     }
 
 
