@@ -56,8 +56,9 @@ public class MethListener implements Listener {
 
     private final Map<UUID, Integer> methCount = new HashMap<>();
     private final Map<UUID, Long> oldTime = new HashMap<>();
-    private final Map<UUID, Integer> damageCooldown = new HashMap<>();
-    private BukkitTask damageTask;
+    private final Map<UUID, Long> damageCooldown = new HashMap<>();
+    private final Map<UUID, BukkitTask> damageTask = new HashMap<>();
+    private final Map<UUID, Long> cooldownCheck = new HashMap<>();
 
 
     // -- Custom Crafting Logic wa--
@@ -419,42 +420,37 @@ public class MethListener implements Listener {
 
             if (methCount.get(playerId) == null || methCount.get(playerId) == 1 || methCount.get(playerId) == 2 || methCount.get(playerId) == 3) {
                 e.setCancelled(true);
-                double damage = e.getDamage();
-                calculatedDamage.put(playerId, damage);
+                Double finalDamage = damageValue;
+                calculatedDamage.put(playerId, finalDamage);
             }
 
             else if (methCount.get(playerId) == 4){
-                Double storedDamage = e.getDamage();
-                Double newDamage = storedDamage*20/100 ;
-                e.setDamage(newDamage);
-                calculatedDamage.put(playerId, 100 - newDamage);
+                Double newDamage = damageValue*20/100 ;
+                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                calculatedDamage.put(playerId, 100 - finalDamage);
             }
 
             else if (methCount.get(playerId) == 5){
-                Double storedDamage = e.getDamage();
-                Double newDamage = storedDamage*50/100 ;
-                e.setDamage(newDamage);
-                double oldCalculatedDamage = calculatedDamage.get(playerId);
-                calculatedDamage.put(playerId, 100 -  (newDamage + oldCalculatedDamage));
+                Double newDamage = damageValue*50/100 ;
+                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                calculatedDamage.put(playerId, 100 - finalDamage);
             }
 
             else if (methCount.get(playerId) == 6){
-                Double storedDamage = e.getDamage();
-                Double newDamage = storedDamage*80/100 ;
-                e.setDamage(newDamage);
-                double oldCalculatedDamage = calculatedDamage.get(playerId);
-                calculatedDamage.put(playerId, 100 -  (newDamage + oldCalculatedDamage));
+                Double newDamage = damageValue*80/100 ;
+                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                calculatedDamage.put(playerId, 100 - finalDamage);
             }
 
             else {
-                damagedPlayer.damage(damageValue);
+                e.setCancelled(false);
             }
 
 
             // ok im gonna try some genius stuff, may look not neat afs
 
 
-            Bukkit.getLogger().info("Anti Damage Started.");
+            /*Bukkit.getLogger().info("Anti Damage Started.");
 
             if (e.getCause() == EntityDamageEvent.DamageCause.CUSTOM) return;
 
@@ -478,7 +474,7 @@ public class MethListener implements Listener {
 
             }
 
-            Bukkit.getLogger().info("Got player ID and set damage.");
+            Bukkit.getLogger().info("Got player ID and set damage.");*/
 
         }
 
@@ -488,10 +484,32 @@ public class MethListener implements Listener {
 
     public void methDamage (Player p){
 
-        this.damageTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        Bukkit.getLogger().info("Task3: Initiated");
+        UUID playerId = p.getUniqueId();
+        BukkitTask oldTask = damageTask.remove(playerId);
+
+        if (oldTask != null) {
+            oldTask.cancel();
+        }
+
+        BukkitTask newTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+            Bukkit.getLogger().info("Task4: BukkitRunnable working");
+
             p.damage(calculatedDamage.get(p.getUniqueId()));
+            methCount.put(p.getUniqueId(), null);
+
+            methCount.remove(playerId);
+            calculatedDamage.remove(playerId);
+            damageCooldown.remove(playerId);
+            cooldownCheck.remove(playerId);
+            oldTime.remove(playerId);
+
+            damageTask.remove(playerId);
 
         }, damageCooldown.get(p.getUniqueId()));
+
+        damageTask.put(playerId, newTask);
 
     }
 
@@ -499,18 +517,40 @@ public class MethListener implements Listener {
     public void onConsumeMeth(PlayerItemConsumeEvent e){
         Player p = e.getPlayer();
         UUID playerId = p.getUniqueId();
-        methDamage(p);
         ItemStack mainHandItem = p.getInventory().getItemInMainHand();
         Long currentTime = System.currentTimeMillis();
+        long initialCooldown = 10000;
+        long test = 200;
 
         if(!(itemManager.getItemId(mainHandItem).equals("n_methamphetamine"))) return;
+
         if (methCount.get(playerId) == null){
             methCount.put(playerId, 1);
             oldTime.put(playerId, currentTime);
-            damageCooldown.put(playerId, 10);
+            damageCooldown.put(playerId, test);
+            cooldownCheck.put(playerId, initialCooldown);
+            methDamage(p);
+
+            Bukkit.getLogger().info("Task1: Meth Count: 1");
+
+        }
+        else {
+            Bukkit.getLogger().info("Task2: Stacking Deteted");
+            int getCount = methCount.get(playerId);
+            methCount.put(playerId, getCount + 1);
+            Long calcTime = currentTime - oldTime.get(playerId);
+
+            if (calcTime > cooldownCheck.get(playerId)) return;
+            Long finalTime = calcTime + initialCooldown;
+            damageCooldown.put(playerId, finalTime);
+            methDamage(p);
+            cooldownCheck.put(playerId, finalTime);
+            Bukkit.getLogger().info("Task3: Damage counter initiated");
         }
 
     }
+
+    // --- block
 
 
 

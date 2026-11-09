@@ -1,7 +1,6 @@
     package com.tesseractstudios;
 
     import com.tesseractstudios.items.ingredients.*;
-    import com.tesseractstudios.listeners.DamageListener;
     import com.tesseractstudios.listeners.MethListener;
     import com.tesseractstudios.managers.ItemManager;
     import com.tesseractstudios.recipes.MethRecipes;
@@ -58,7 +57,6 @@
             // -- RECIPE --
             new MethRecipes(this, itemManager).register();
             new MethListener(this, itemManager);
-            new DamageListener(this, itemManager);
 
 
             // ------ COMMANDS ------
