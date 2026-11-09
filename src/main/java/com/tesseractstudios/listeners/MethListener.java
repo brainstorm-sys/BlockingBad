@@ -418,10 +418,20 @@ public class MethListener implements Listener {
 
         if (uuidStore.containsKey(playerId)){
 
+
             if (methCount.get(playerId) == null || methCount.get(playerId) == 1 || methCount.get(playerId) == 2 || methCount.get(playerId) == 3) {
                 e.setCancelled(true);
-                Double finalDamage = damageValue;
-                calculatedDamage.put(playerId, finalDamage);
+
+                if (calculatedDamage.get(playerId) == null){
+                    calculatedDamage.put(playerId, damageValue);
+                }
+                else {
+                    Double finalDamage = calculatedDamage.get(playerId) + damageValue;
+                    calculatedDamage.put(playerId, finalDamage);
+
+                }
+
+                Bukkit.getLogger().info("Task 10: MethCount taken and damage updated.");
             }
 
             else if (methCount.get(playerId) == 4){
@@ -496,16 +506,18 @@ public class MethListener implements Listener {
 
             Bukkit.getLogger().info("Task4: BukkitRunnable working");
 
-            p.damage(calculatedDamage.get(p.getUniqueId()));
-            methCount.put(p.getUniqueId(), null);
-
+            uuidStore.remove(playerId);
             methCount.remove(playerId);
-            calculatedDamage.remove(playerId);
             damageCooldown.remove(playerId);
             cooldownCheck.remove(playerId);
             oldTime.remove(playerId);
-
             damageTask.remove(playerId);
+
+            p.damage(calculatedDamage.get(p.getUniqueId()));
+            calculatedDamage.remove(playerId);
+            methCount.put(p.getUniqueId(), null);
+
+
 
         }, damageCooldown.get(p.getUniqueId()));
 
@@ -519,15 +531,14 @@ public class MethListener implements Listener {
         UUID playerId = p.getUniqueId();
         ItemStack mainHandItem = p.getInventory().getItemInMainHand();
         Long currentTime = System.currentTimeMillis();
-        long initialCooldown = 10000;
-        long test = 200;
+        long initialCooldown = 200;
 
         if(!(itemManager.getItemId(mainHandItem).equals("n_methamphetamine"))) return;
 
         if (methCount.get(playerId) == null){
             methCount.put(playerId, 1);
             oldTime.put(playerId, currentTime);
-            damageCooldown.put(playerId, test);
+            damageCooldown.put(playerId, initialCooldown);
             cooldownCheck.put(playerId, initialCooldown);
             methDamage(p);
 
@@ -540,8 +551,8 @@ public class MethListener implements Listener {
             methCount.put(playerId, getCount + 1);
             Long calcTime = currentTime - oldTime.get(playerId);
 
-            if (calcTime > cooldownCheck.get(playerId)) return;
-            Long finalTime = calcTime + initialCooldown;
+            if (calcTime/50 > cooldownCheck.get(playerId)) return;
+            Long finalTime = calcTime/50 + initialCooldown;
             damageCooldown.put(playerId, finalTime);
             methDamage(p);
             cooldownCheck.put(playerId, finalTime);
