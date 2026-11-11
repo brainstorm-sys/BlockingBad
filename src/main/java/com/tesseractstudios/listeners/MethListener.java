@@ -1,5 +1,20 @@
 package com.tesseractstudios.listeners;
 
+
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.WrappedDataValue;
+import com.comphenix.protocol.wrappers.WrappedRegistrable;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketEvent;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUpdateHealth;
 import com.tesseractstudios.managers.ItemManager;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.FoodProperties;
@@ -23,6 +38,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -30,6 +46,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
+
+import static com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes.INT;
 
 
 public class MethListener implements Listener {
@@ -199,7 +217,6 @@ public class MethListener implements Listener {
                         MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 70% ᴄʜᴀɴᴄᴇ ᴏꜰ ɴᴀᴜѕᴇᴀ</color></!i>"),
                         MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 50% ᴄʜᴀɴᴄᴇ ᴏꜰ ᴅᴀʀᴋɴᴇѕѕ</color></!i>"),
                         MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 20% ᴄʜᴀɴᴄᴇ ᴏꜰ ʙᴏᴛʜ</color></!i>"),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 75% ᴄʜᴀɴᴄᴇ ᴏꜰ ᴘᴏɪѕᴏɴ</color></!i>"),
                         MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* ѕᴛʀᴇɴɢᴛʜ 2 + ѕᴘᴇᴇᴅ 1</color></!i>"),
                         Component.text(""),
                         MiniMessage.miniMessage().deserialize("<!i><color:#61BADD>ᴏꜰꜰᴇʀѕ ɪɴᴠɪɴᴄɪʙɪʟɪᴛʏ ꜰᴏʀ ᴀ ʙɪᴛ.</color></!i>")
@@ -369,7 +386,6 @@ public class MethListener implements Listener {
 
             PotionEffect tuffNausea = new PotionEffect(PotionEffectType.NAUSEA, 400, 1);
             PotionEffect tuffBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 400, 2);
-            PotionEffect tuffPoison = new PotionEffect(PotionEffectType.POISON, 200, 1);
             PotionEffect speedHack = new PotionEffect(PotionEffectType.SPEED, 100, 1);
             PotionEffect strengthHack = new PotionEffect(PotionEffectType.STRENGTH, 100, 2);
 
@@ -386,10 +402,6 @@ public class MethListener implements Listener {
                 else if (methRandom.nextDouble() < 0.50){
                     p.addPotionEffect(tuffBlindness);
                 }
-            }
-
-            if (methRandom.nextDouble() < 0.70){
-                p.addPotionEffect(tuffPoison);
             }
 
             uuidStore.put(p.getUniqueId(), "test");
@@ -560,8 +572,51 @@ public class MethListener implements Listener {
 
 
 
+    // ---- packets!! I've never worked on it so the code can be buggy.. ----
 
-// jesus it works, tears in my fricking eyes test
+
+
+    public void Packetmanager(Player p) {
+
+        int value = 2;
+        EntityData<?> data = new EntityData<>(
+                1,
+                INT,
+                value
+        );
+
+
+        User user = (User) p;
+        WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
+                int Entityid,
+                data
+                );
+        user.sendPacket(packet);
+
+
+    }
+
+
+   /* ProtocolManager testmanager = ProtocolLibrary.getProtocolManager();
+
+    public void setTestmanager(ProtocolManager testmanager) {
+        this.testmanager = testmanager;
+
+        testmanager.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.ENTITY_METADATA) {
+            @Override
+            public void onPacketSending(PacketEvent e) {
+                super.onPacketSending(e);
+
+                PacketContainer packet = e.getPacket();
+                List<WrappedDataValue> values = packet.getDataValueCollectionModifier().read(1);
+
+
+
+            }
+        });
+    }*/
+
+    // jesus it works, tears in my fricking eyes test
 
 
 }

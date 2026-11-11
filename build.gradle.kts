@@ -8,11 +8,13 @@ repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven(url = "https://repo.codemc.org/repository/maven-public/")
+    maven("https://repo.dmulloy2.net/repository/public/")
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.3.build.+")
-    implementation("dev.jorel:commandapi-paper-shade:12.2.0-SNAPSHOT")
+    compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
+    compileOnly("com.github.retrooper:packetevents-spigot:2.14.0")
 }
 
 java {

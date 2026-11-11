@@ -1,11 +1,10 @@
     package com.tesseractstudios;
 
+    import com.github.retrooper.packetevents.PacketEvents;
     import com.tesseractstudios.items.ingredients.*;
     import com.tesseractstudios.listeners.MethListener;
     import com.tesseractstudios.managers.ItemManager;
     import com.tesseractstudios.recipes.MethRecipes;
-    import dev.jorel.commandapi.CommandAPI;
-    import dev.jorel.commandapi.CommandAPIPaperConfig;
     import org.bukkit.plugin.java.JavaPlugin;
 
     public final class BlockingBad extends JavaPlugin {
@@ -14,23 +13,15 @@
         public static BlockingBad instance;
 
 
-        @Override
-        public void onLoad() {
-            CommandAPI.onLoad(
-                    new CommandAPIPaperConfig(this)
-                            .silentLogs(true)
-                            .fallbackToLatestNMS(false)
-                            .missingExecutorImplementationMessage("An error occured")
-            );
-        }
 
         @Override
 
         public void onEnable() {
 
+            PacketEvents.getAPI().init();
+
             instance = this;
             // Plugin startup logic
-            CommandAPI.onEnable();
 
             // ------ MANAGERS ------
             ItemManager itemManager = new ItemManager(this);
@@ -64,12 +55,17 @@
 
         }
 
+        @Override
+        public void onLoad(){
+            PacketEvents.getAPI().load();
+        }
+
 
 
         @Override
         public void onDisable() {
             // Plugin shutdown logic
-            CommandAPI.onDisable();
+            PacketEvents.getAPI().terminate();
             instance = null;
         }
     }

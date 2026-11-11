@@ -4,3 +4,5 @@ version: '${version}'
 main: com.tesseractstudios.BlockingBad
 api-version: '26.3'
 load: POSTWORLD
+softdepend:
+  - ProtocolLib
