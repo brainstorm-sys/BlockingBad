@@ -66,8 +66,6 @@ public class MethListener implements Listener {
 
 
     private final Map<UUID, String> uuidStore = new HashMap<>();
-    private final Map<UUID, Double> damageStorage = new HashMap<>();
-    private final Map<UUID, Double> playerSave = new HashMap<>();
     private final Map<UUID, Long> methSoundCooldwn = new HashMap<>();
     private final Map<UUID, Double> calculatedDamage = new HashMap<>();
 
@@ -78,7 +76,6 @@ public class MethListener implements Listener {
     private final Map<UUID, Long> damageCooldown = new HashMap<>();
     private final Map<UUID, BukkitTask> damageTask = new HashMap<>();
     private final Map<UUID, Long> cooldownCheck = new HashMap<>();
-    private final Map<UUID, Boolean> leaveTrue = new HashMap<>();
 
 
     // -- Custom Crafting Logic wa--
@@ -581,7 +578,44 @@ public class MethListener implements Listener {
 
     public void breathEffect(Player p) {
 
-        int value = 2;
+        UUID playerId = p.getUniqueId();
+
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            Bukkit.getLogger().info("Effect running!");
+
+            for (int i = 0; i<100000; i++){
+
+                long currenTime = System.currentTimeMillis();
+                long value = currenTime - cooldownCheck.get(playerId);
+                int convertedValue = (int) value/50;
+
+                if(!(uuidStore.get(playerId) == null)) return;
+                long cooldownGet = damageCooldown.get(playerId) - convertedValue;
+
+                long calculatedConvertible = 300/damageCooldown.get(playerId) * cooldownGet;
+                int finalCooldown = (int) calculatedConvertible;
+
+                EntityData<?> data = new EntityData<>(
+                        1,
+                        INT,
+                        finalCooldown
+                );
+
+                WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
+                        p.getEntityId(),
+                        Collections.singletonList(data)
+                );
+
+                PacketEvents.getAPI()
+                        .getPlayerManager()
+                        .sendPacket(p, packet);
+
+
+            }
+
+
+        }, 0, 20);
+
         EntityData<?> data = new EntityData<>(
                 1,
                 INT,
