@@ -519,6 +519,8 @@ public class MethListener implements Listener {
             damageCooldown.put(playerId, initialCooldown);
             cooldownCheck.put(playerId, initialCooldown);
             methDamage(p);
+            breathEffect(p);
+
 
             Bukkit.getLogger().info("Task1: Meth Count: 1");
 
@@ -533,6 +535,7 @@ public class MethListener implements Listener {
             Long finalTime = calcTime/50 + initialCooldown;
             damageCooldown.put(playerId, finalTime);
             methDamage(p);
+            breathEffect(p);
             cooldownCheck.put(playerId, finalTime);
             Bukkit.getLogger().info("Task3: Damage counter initiated");
         }
@@ -576,7 +579,7 @@ public class MethListener implements Listener {
 
 
 
-    public void Packetmanager(Player p) {
+    public void breathEffect(Player p) {
 
         int value = 2;
         EntityData<?> data = new EntityData<>(
@@ -585,13 +588,16 @@ public class MethListener implements Listener {
                 value
         );
 
-
         User user = (User) p;
         WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
-                int Entityid,
-                data
+                p.getEntityId(),
+                Collections.singletonList(data)
                 );
-        user.sendPacket(packet);
+
+
+        PacketEvents.getAPI()
+                .getPlayerManager()
+                .sendPacket(p, packet);
 
 
     }
