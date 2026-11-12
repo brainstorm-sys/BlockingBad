@@ -6,3 +6,8 @@ api-version: '26.3'
 load: POSTWORLD
 softdepend:
   - ProtocolLib
+  - ProtocolSupport
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot

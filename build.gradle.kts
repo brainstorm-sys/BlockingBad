@@ -1,3 +1,4 @@
+
 plugins {
     id("java-library")
     id("xyz.jpenilla.run-paper") version "3.1.0"
@@ -7,14 +8,22 @@ plugins {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
-    maven(url = "https://repo.codemc.org/repository/maven-public/")
+    maven("https://repo.codemc.org/repository/maven-public/")
     maven("https://repo.dmulloy2.net/repository/public/")
+    maven("https://repo.codemc.io/repository/maven-releases/")
+    maven("https://repo.codemc.io/repository/maven-snapshots/")
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.3.build.+")
-    compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
-    compileOnly("com.github.retrooper:packetevents-spigot:2.14.0")
+    implementation("com.github.retrooper:packetevents-spigot:2.14.0") {
+        exclude(group = "net.kyori", module = "adventure-api")
+        exclude(group = "net.kyori", module = "adventure-key")
+        exclude(group = "net.kyori", module = "examination-api")
+        exclude(group = "net.kyori", module = "examination-string")
+    }
+    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("net.kyori:adventure-nbt:5.2.0")
 }
 
 java {
@@ -24,6 +33,20 @@ java {
 tasks {
     shadowJar {
         archiveClassifier.set("")
+        relocate(
+            "com.github.retrooper",
+            "com.tesseractstudios.blockingbad.libs.packetevents"
+        )
+
+        relocate(
+            "io.github.retrooper",
+            "com.tesseractstudios.blockingbad.libs.packetevents"
+        )
+
+        relocate(
+            "com.google.gson",
+            "com.tesseractstudios.blockingbad.libs.gson"
+        )
     }
 
     build {
@@ -37,6 +60,7 @@ tasks {
 
     processResources {
         val props = mapOf("version" to version)
+
         filesMatching("plugin.yml") {
             expand(props)
         }

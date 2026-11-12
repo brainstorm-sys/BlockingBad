@@ -6,6 +6,7 @@
     import com.tesseractstudios.managers.ItemManager;
     import com.tesseractstudios.recipes.MethRecipes;
     import org.bukkit.plugin.java.JavaPlugin;
+    import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 
     public final class BlockingBad extends JavaPlugin {
 
@@ -57,6 +58,7 @@
 
         @Override
         public void onLoad(){
+            PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
             PacketEvents.getAPI().load();
         }
 

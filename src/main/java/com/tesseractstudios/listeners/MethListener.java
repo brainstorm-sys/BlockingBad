@@ -1,14 +1,7 @@
 package com.tesseractstudios.listeners;
 
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.WrappedDataValue;
-import com.comphenix.protocol.wrappers.WrappedRegistrable;
+
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketEvent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
@@ -76,6 +69,7 @@ public class MethListener implements Listener {
     private final Map<UUID, Long> damageCooldown = new HashMap<>();
     private final Map<UUID, BukkitTask> damageTask = new HashMap<>();
     private final Map<UUID, Long> cooldownCheck = new HashMap<>();
+    private final Map<UUID, BukkitTask> breathEffectTask = new HashMap<>();
 
 
     // -- Custom Crafting Logic wa--
@@ -514,7 +508,7 @@ public class MethListener implements Listener {
             methCount.put(playerId, 1);
             oldTime.put(playerId, currentTime);
             damageCooldown.put(playerId, initialCooldown);
-            cooldownCheck.put(playerId, initialCooldown);
+            cooldownCheck.put(playerId, currentTime);
             methDamage(p);
             breathEffect(p);
 
@@ -533,7 +527,7 @@ public class MethListener implements Listener {
             damageCooldown.put(playerId, finalTime);
             methDamage(p);
             breathEffect(p);
-            cooldownCheck.put(playerId, finalTime);
+            cooldownCheck.put(playerId, currentTime);
             Bukkit.getLogger().info("Task3: Damage counter initiated");
         }
 
@@ -579,62 +573,48 @@ public class MethListener implements Listener {
     public void breathEffect(Player p) {
 
         UUID playerId = p.getUniqueId();
+        BukkitTask oldBreathTask = breathEffectTask.remove(playerId);
 
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+        if (oldBreathTask != null){
+            oldBreathTask.cancel();
+        }
+
+
+        BukkitTask breathTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             Bukkit.getLogger().info("Effect running!");
 
-            for (int i = 0; i<100000; i++){
 
-                long currenTime = System.currentTimeMillis();
-                long value = currenTime - cooldownCheck.get(playerId);
-                int convertedValue = (int) value/50;
+            long currenTime = System.currentTimeMillis();
+            Long test = cooldownCheck.get(playerId);
+            if (test == null) return;
+            long value = currenTime - test;
+            int convertedValue = (int) value / 50;
 
-                if(!(uuidStore.get(playerId) == null)) return;
-                long cooldownGet = damageCooldown.get(playerId) - convertedValue;
+            if (uuidStore.get(playerId) == null) return;
+            long cooldownGet = damageCooldown.get(playerId) - convertedValue;
 
-                long calculatedConvertible = 300/damageCooldown.get(playerId) * cooldownGet;
-                int finalCooldown = (int) calculatedConvertible;
+            long calculatedConvertible = 300 / damageCooldown.get(playerId) * cooldownGet;
+            int finalCooldown = (int) calculatedConvertible;
 
-                EntityData<?> data = new EntityData<>(
-                        1,
-                        INT,
-                        finalCooldown
-                );
+            EntityData<?> data = new EntityData<>(
+                    1,
+                    INT,
+                    finalCooldown
+            );
 
-                WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
-                        p.getEntityId(),
-                        Collections.singletonList(data)
-                );
+            WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
+                    p.getEntityId(),
+                    Collections.singletonList(data)
+            );
 
-                PacketEvents.getAPI()
-                        .getPlayerManager()
-                        .sendPacket(p, packet);
-
-
-            }
-
+            PacketEvents.getAPI()
+                    .getPlayerManager()
+                    .sendPacket(p, packet);
 
         }, 0, 20);
 
-        EntityData<?> data = new EntityData<>(
-                1,
-                INT,
-                value
-        );
+        breathEffectTask.put(playerId, breathTask);
 
-        User user = (User) p;
-        WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
-                p.getEntityId(),
-                Collections.singletonList(data)
-                );
-
-
-        PacketEvents.getAPI()
-                .getPlayerManager()
-                .sendPacket(p, packet);
-
-
-    }
 
 
    /* ProtocolManager testmanager = ProtocolLibrary.getProtocolManager();
@@ -656,7 +636,8 @@ public class MethListener implements Listener {
         });
     }*/
 
-    // jesus it works, tears in my fricking eyes test
+        // jesus it works, tears in my fricking eyes test
+    }
 
 
 }
