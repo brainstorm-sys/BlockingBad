@@ -18,6 +18,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -379,9 +380,11 @@ public class MethListener implements Listener {
             PotionEffect tuffBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 400, 2);
             PotionEffect speedHack = new PotionEffect(PotionEffectType.SPEED, 100, 1);
             PotionEffect strengthHack = new PotionEffect(PotionEffectType.STRENGTH, 100, 2);
+            PotionEffect waterHack = new PotionEffect(PotionEffectType.WATER_BREATHING, 999, 1);
 
             p.addPotionEffect(speedHack);
             p.addPotionEffect(strengthHack);
+            p.addPotionEffect(waterHack);
 
             if (roll < 0.20){
                 p.addPotionEffect(tuffNausea);
@@ -471,6 +474,7 @@ public class MethListener implements Listener {
             oldTask.cancel();
         }
 
+
         BukkitTask newTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
             Bukkit.getLogger().info("Task4: BukkitRunnable working");
@@ -481,15 +485,23 @@ public class MethListener implements Listener {
             cooldownCheck.remove(playerId);
             oldTime.remove(playerId);
             damageTask.remove(playerId);
+            p.removePotionEffect(PotionEffectType.WATER_BREATHING);
 
             // test
+            // wow works perfectly fine! Better solution than the one mentioned in JavaDocs..
             BukkitTask oldBreathTask = breathEffectTask.remove(playerId);
 
             if (oldBreathTask != null){
                 oldBreathTask.cancel();
             }
 
-            sendAir(p);
+            // for underwater
+            Block getEyeBlock = p.getEyeLocation().getBlock();
+            if (getEyeBlock.getType() == Material.WATER){
+                p.setRemainingAir(0);
+            } else {
+                sendAir(p);
+            }
 
             p.damage(calculatedDamage.get(p.getUniqueId()));
             calculatedDamage.remove(playerId);
@@ -596,8 +608,18 @@ public class MethListener implements Listener {
                 .getPlayerManager()
                 .sendPacket(p, airPacket);
 
+    }
+
+    public void waterDetect (Player p){
+
+        Block getEyeBlock = p.getEyeLocation().getBlock();
+        if (getEyeBlock.getType() == Material.WATER){
+            p.setRemainingAir(0);
+        }
 
     }
+
+    // IT WORKS
 
     public void breathEffect(Player p) {
 
