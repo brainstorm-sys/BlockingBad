@@ -544,9 +544,9 @@ public class MethListener implements Listener {
         Player p = e.getPlayer();
         UUID playerID = p.getUniqueId();
         ItemStack methDetect = p.getInventory().getItemInMainHand();
-        long cooldownMS = 2000;
         Long currentTime = System.currentTimeMillis();
 
+        if (itemManager.getItemId(methDetect).equals(null)) return;
         if (!(itemManager.getItemId(methDetect).equals("n_methamphetamine"))) return;
 
         if (p.hasCooldown(methDetect.getType())) return;
@@ -591,15 +591,17 @@ public class MethListener implements Listener {
             int convertedValue = (int) value / 50;
 
             if (uuidStore.get(playerId) == null) return;
-            long cooldownGet = damageCooldown.get(playerId) - convertedValue;
 
-            long calculatedConvertible = 300 / damageCooldown.get(playerId) * cooldownGet;
-            int finalCooldown = (int) calculatedConvertible;
+            long total = damageCooldown.get(playerId);
+            long cooldownGet = total - convertedValue;
+
+            /*long calculatedConvertible = 300 / total * cooldownGet;*/
+            int calculatedRemainingAir = (int) Math.max(0, 300L * cooldownGet / total);
 
             EntityData<?> data = new EntityData<>(
                     1,
                     INT,
-                    finalCooldown
+                    calculatedRemainingAir
             );
 
             WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(
