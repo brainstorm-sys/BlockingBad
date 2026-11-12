@@ -482,6 +482,15 @@ public class MethListener implements Listener {
             oldTime.remove(playerId);
             damageTask.remove(playerId);
 
+            // test
+            BukkitTask oldBreathTask = breathEffectTask.remove(playerId);
+
+            if (oldBreathTask != null){
+                oldBreathTask.cancel();
+            }
+
+            sendAir(p);
+
             p.damage(calculatedDamage.get(p.getUniqueId()));
             calculatedDamage.remove(playerId);
             methCount.put(p.getUniqueId(), null);
@@ -570,6 +579,26 @@ public class MethListener implements Listener {
 
 
 
+    public void sendAir (Player p){
+
+        EntityData<?> airData = new EntityData<>(
+                1,
+                INT,
+                300
+        );
+
+        WrapperPlayServerEntityMetadata airPacket = new WrapperPlayServerEntityMetadata(
+                p.getEntityId(),
+                Collections.singletonList(airData)
+        );
+
+        PacketEvents.getAPI()
+                .getPlayerManager()
+                .sendPacket(p, airPacket);
+
+
+    }
+
     public void breathEffect(Player p) {
 
         UUID playerId = p.getUniqueId();
@@ -595,8 +624,18 @@ public class MethListener implements Listener {
             long total = damageCooldown.get(playerId);
             long cooldownGet = total - convertedValue;
 
-            /*long calculatedConvertible = 300 / total * cooldownGet;*/
+
             int calculatedRemainingAir = (int) Math.max(0, 300L * cooldownGet / total);
+            if (calculatedRemainingAir >= 300) calculatedRemainingAir = 299;
+
+
+            /*Long test = cooldownCheck.get(playerId);
+            if (test == null) {
+                sendAir(p);
+                BukkitTask self = breathEffectTask.remove(playerId);
+                if (self != null) self.cancel();
+                return;
+            }*/
 
             EntityData<?> data = new EntityData<>(
                     1,
