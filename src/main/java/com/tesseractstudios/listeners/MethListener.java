@@ -2,6 +2,7 @@ package com.tesseractstudios.listeners;
 
 
 
+import aQute.bnd.annotation.metatype.Meta;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketEvent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
@@ -98,12 +99,12 @@ public class MethListener implements Listener {
 
     @EventHandler
     public void onLeaveEvent(PlayerQuitEvent e){
-        Bukkit.getLogger().info("Player Leave event detected");
+        //Bukkit.getLogger().info("Player Leave event detected");
         Player p = e.getPlayer();
         UUID playerId = p.getUniqueId();
 
         if(!(uuidStore.containsKey(playerId))) return;
-        Bukkit.getLogger().info("Player uuid get done");
+        //Bukkit.getLogger().info("Player uuid get done");
 
         calculatedDamage.put(playerId, calculatedDamage.get(playerId));
         BukkitTask damageRemove = damageTask.remove(playerId);
@@ -165,14 +166,25 @@ public class MethListener implements Listener {
     @EventHandler
     public void onEat(PlayerItemConsumeEvent e){
 
-        System.out.println("If this works then lammy's gay");
+        //System.out.println("If this works then lammy's gay");
         Player player = e.getPlayer();
         ItemStack eatitem = player.getInventory().getItemInMainHand();
 
         // - idk dawg test -, ok works ez
-        if(eatitem.getType() == Material.TROPICAL_FISH){
+        if(eatitem.getType() == Material.TROPICAL_FISH || eatitem.getType() == Material.COOKED_COD || eatitem.getType() == Material.SALMON || eatitem.getType() == Material.COOKED_SALMON || eatitem.getType() == Material.COD){
             e.setCancelled(true);
             eatitem.setAmount(eatitem.getAmount() -1);
+
+            // nutrition logic
+
+            ItemMeta foodMeta = eatitem.getItemMeta();
+            float foodSaturation = foodMeta.getFood().getSaturation();
+            int foodHunger = foodMeta.getFood().getNutrition();
+
+            player.setFoodLevel(foodHunger);
+            player.setSaturation(foodSaturation);
+
+
             if (eatitem.getAmount() <= 0) {
                 player.getInventory().setItemInMainHand(itemManager.create("fish_bone"));
             }
@@ -195,6 +207,7 @@ public class MethListener implements Listener {
         if (e.getClickedBlock() == null || e.getClickedBlock().getType() == Material.AIR) return;
 
         ItemStack mainhand = p.getInventory().getItemInMainHand();
+        if (itemManager.getItemId(mainhand) == null) return;
         if (itemManager.getItemId(mainhand).equals("liquidmeth")){
             if (e.getClickedBlock().getType() == Material.ANVIL){
                 e.setCancelled(true);
@@ -335,11 +348,16 @@ public class MethListener implements Listener {
     @EventHandler
     public void onEatMeth(PlayerItemConsumeEvent e){
 
-        Bukkit.getLogger().info("Cat 1: Consume Event Triggered!");
+        //Bukkit.getLogger().info("Cat 1: Consume Event Triggered!");
         Player p = e.getPlayer();
         ItemStack methItem = p.getInventory().getItemInMainHand();
-        UUID playerId = p.getUniqueId();
-        long currentTime = System.currentTimeMillis();
+        ItemStack offHandItem = p.getInventory().getItemInOffHand();
+
+        if (itemManager.getItemId(offHandItem) != null) {
+            if (itemManager.getItemId(offHandItem).equals("n_methamphetamine")){
+                methItem = itemManager.create("n_methamphetamine");
+            }
+        }
 
 
         // adding potion randomnessw
@@ -355,12 +373,12 @@ public class MethListener implements Listener {
 
             // sound effects. I'm pretty bad at this actually
 
-            p.playSound(Sound.sound(Key.key("blockingbad", "crystal_smell"), Sound.Source.MASTER, 1f, 1f));
+            p.getWorld().playSound(Sound.sound(Key.key("blockingbad:crystal_smell"), Sound.Source.MASTER, 1f, 1f));
 
 
-            p.sendMessage(MiniMessage.miniMessage().deserialize("<!i><gradient:#6179DD:#7754F4><shadow:#181E37:1>ɴ</shadow><shadow:#191D38:1>ᴜ</shadow><shadow:#191C38:1>ᴍ</shadow><shadow:#1A1B39:1>ʙ</shadow><shadow:#1A1A39:1> </shadow></gradient><gradient:#7754F4:#1FA4D7><shadow:#1B1A3A:1>ᴛ</shadow><shadow:#1C193B:1>ᴏ</shadow><shadow:#1C183B:1> </shadow><shadow:#1D173C:1>ᴅ</shadow><shadow:#1D163C:1>ᴀ</shadow><shadow:#1E153D:1>ᴍ</shadow><shadow:#1C173C:1>ᴀ</shadow><shadow:#19193B:1>ɢ</shadow><shadow:#171C3B:1>ᴇ</shadow><shadow:#141E3A:1> </shadow><shadow:#122039:1>ꜰ</shadow><shadow:#0F2238:1>ᴏ</shadow><shadow:#0D2538:1>ʀ</shadow><shadow:#0A2737:1> </shadow><shadow:#082936:1>1</shadow></gradient><gradient:#1FA4D7:#5BE3EB><shadow:#0A2B37:1>0</shadow><shadow:#0B2C37:1> </shadow><shadow:#0D2E38:1>ѕ</shadow><shadow:#0E2F38:1>ᴇ</shadow><shadow:#103139:1>ᴄ</shadow><shadow:#113339:1>ᴏ</shadow><shadow:#13343A:1>ɴ</shadow><shadow:#14363A:1>ᴅ</shadow><shadow:#16373B:1>ѕ</shadow><shadow:#17393B:1>.</shadow></gradient></!i>"));
+            //p.sendMessage(MiniMessage.miniMessage().deserialize("<!i><gradient:#6179DD:#7754F4><shadow:#181E37:1>ɴ</shadow><shadow:#191D38:1>ᴜ</shadow><shadow:#191C38:1>ᴍ</shadow><shadow:#1A1B39:1>ʙ</shadow><shadow:#1A1A39:1> </shadow></gradient><gradient:#7754F4:#1FA4D7><shadow:#1B1A3A:1>ᴛ</shadow><shadow:#1C193B:1>ᴏ</shadow><shadow:#1C183B:1> </shadow><shadow:#1D173C:1>ᴅ</shadow><shadow:#1D163C:1>ᴀ</shadow><shadow:#1E153D:1>ᴍ</shadow><shadow:#1C173C:1>ᴀ</shadow><shadow:#19193B:1>ɢ</shadow><shadow:#171C3B:1>ᴇ</shadow><shadow:#141E3A:1> </shadow><shadow:#122039:1>ꜰ</shadow><shadow:#0F2238:1>ᴏ</shadow><shadow:#0D2538:1>ʀ</shadow><shadow:#0A2737:1> </shadow><shadow:#082936:1>1</shadow></gradient><gradient:#1FA4D7:#5BE3EB><shadow:#0A2B37:1>0</shadow><shadow:#0B2C37:1> </shadow><shadow:#0D2E38:1>ѕ</shadow><shadow:#0E2F38:1>ᴇ</shadow><shadow:#103139:1>ᴄ</shadow><shadow:#113339:1>ᴏ</shadow><shadow:#13343A:1>ɴ</shadow><shadow:#14363A:1>ᴅ</shadow><shadow:#16373B:1>ѕ</shadow><shadow:#17393B:1>.</shadow></gradient></!i>"));
 
-            Bukkit.getLogger().info("Cat 3: Meth Detected!");
+            //Bukkit.getLogger().info("Cat 3: Meth Detected!");
 
             PotionEffect tuffNausea = new PotionEffect(PotionEffectType.NAUSEA, 400, 1);
             PotionEffect tuffBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 400, 2);
@@ -419,7 +437,7 @@ public class MethListener implements Listener {
 
                 }
 
-                Bukkit.getLogger().info("Task 10: MethCount taken and damage updated.");
+                //Bukkit.getLogger().info("Task 10: MethCount taken and damage updated.");
             }
 
             else if (methCount.get(playerId) == 4){
@@ -452,7 +470,7 @@ public class MethListener implements Listener {
 
     public void methDamage (Player p){
 
-        Bukkit.getLogger().info("Task3: Initiated");
+        //Bukkit.getLogger().info("Task3: Initiated");
         UUID playerId = p.getUniqueId();
         BukkitTask oldTask = damageTask.remove(playerId);
 
@@ -463,7 +481,7 @@ public class MethListener implements Listener {
 
         BukkitTask newTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-            Bukkit.getLogger().info("Task4: BukkitRunnable working");
+            //Bukkit.getLogger().info("Task4: BukkitRunnable working");
 
             uuidStore.remove(playerId);
             methCount.remove(playerId);
@@ -503,14 +521,24 @@ public class MethListener implements Listener {
 
     }
 
+
+    // wait bruh why did i make two of itemconsumeevents
     @EventHandler
     public void onConsumeMeth(PlayerItemConsumeEvent e){
         Player p = e.getPlayer();
         UUID playerId = p.getUniqueId();
         ItemStack mainHandItem = p.getInventory().getItemInMainHand();
+        ItemStack offHandItem = p.getInventory().getItemInOffHand();
         Long currentTime = System.currentTimeMillis();
         long initialCooldown = 200;
 
+        if (itemManager.getItemId(offHandItem) != null) {
+            if (itemManager.getItemId(offHandItem).equals("n_methamphetamine")){
+                mainHandItem = itemManager.create("n_methamphetamine");
+            }
+        }
+
+        if(itemManager.getItemId(mainHandItem) == null) return;
         if(!(itemManager.getItemId(mainHandItem).equals("n_methamphetamine"))) return;
 
         if (methCount.get(playerId) == null){
@@ -522,11 +550,11 @@ public class MethListener implements Listener {
             breathEffect(p);
 
 
-            Bukkit.getLogger().info("Task1: Meth Count: 1");
+            //Bukkit.getLogger().info("Task1: Meth Count: 1");
 
         }
         else {
-            Bukkit.getLogger().info("Task2: Stacking Deteted");
+            //Bukkit.getLogger().info("Task2: Stacking Deteted");
             int getCount = methCount.get(playerId);
             methCount.put(playerId, getCount + 1);
             Long calcTime = currentTime - oldTime.get(playerId);
@@ -537,7 +565,7 @@ public class MethListener implements Listener {
             methDamage(p);
             breathEffect(p);
             cooldownCheck.put(playerId, currentTime);
-            Bukkit.getLogger().info("Task3: Damage counter initiated");
+            //Bukkit.getLogger().info("Task3: Damage counter initiated");
         }
 
     }
@@ -553,17 +581,25 @@ public class MethListener implements Listener {
         Player p = e.getPlayer();
         UUID playerID = p.getUniqueId();
         ItemStack methDetect = p.getInventory().getItemInMainHand();
+        ItemStack methDetectOffhand = p.getInventory().getItemInOffHand();
+
         Long currentTime = System.currentTimeMillis();
         if (p.hasCooldown(methDetect.getType())) return;
         Action  rightClickCheck = e.getAction();
-        if (rightClickCheck == Action.RIGHT_CLICK_AIR || rightClickCheck == Action.RIGHT_CLICK_BLOCK) return;
+        if (rightClickCheck == Action.LEFT_CLICK_AIR || rightClickCheck == Action.LEFT_CLICK_BLOCK) return;
 
-        if (itemManager.getItemId(methDetect).equals(null)) return;
+        // im not sure && would still cause null pointer exception, this is the first time i've used it, will cleanup code in future if it doesn't cause npe
+
+        if (itemManager.getItemId(methDetectOffhand) != null && itemManager.getItemId(methDetectOffhand).equals("n_methamphetamine")){
+            methDetect = methDetectOffhand;
+        }
+
+        if (itemManager.getItemId(methDetect) == null) return;
         if (!(itemManager.getItemId(methDetect).equals("n_methamphetamine"))) return;
 
 
 
-        p.playSound(Sound.sound(Key.key("blockingbad", "crystal_sniff"), Sound.Source.MASTER, 1, 1));
+        p.getWorld().playSound(Sound.sound(Key.key("blockingbad:crystal_sniff"), Sound.Source.MASTER, 1f, 1f));
         methSoundCooldwn.put(playerID, currentTime);
     }
 
@@ -572,11 +608,30 @@ public class MethListener implements Listener {
         Player p = e.getPlayer();
         UUID playerId = p.getUniqueId();
 
-        if (calculatedDamage.get(playerId) != null) return;
-        damageTask.remove(playerId);
-        breathEffectTask.remove(playerId);
+        if (calculatedDamage.get(playerId) == null) return;
+
+        BukkitTask damageEvent = damageTask.remove(playerId);
+        if (damageEvent != null) {
+            damageEvent.cancel();
+        }
+        BukkitTask breathTask = breathEffectTask.remove(playerId);
+        if (breathTask != null){
+            breathTask.cancel();
+        }
         BukkitTask vignete = vignetteTask.remove(playerId);
-        vignete.cancel();
+        if (vignete != null){
+            vignete.cancel();
+        }
+
+        //clearing stuffs
+
+        uuidStore.remove(playerId);
+        methCount.remove(playerId);
+        damageCooldown.remove(playerId);
+        cooldownCheck.remove(playerId);
+        oldTime.remove(playerId);
+        damageTask.remove(playerId);
+        calculatedDamage.remove(playerId);
     }
 
 
@@ -604,15 +659,6 @@ public class MethListener implements Listener {
 
     }
 
-    public void waterDetect (Player p){
-
-        Block getEyeBlock = p.getEyeLocation().getBlock();
-        if (getEyeBlock.getType() == Material.WATER){
-            p.setRemainingAir(0);
-        }
-
-    }
-
     // IT WORKS
 
     public void breathEffect(Player p) {
@@ -626,7 +672,7 @@ public class MethListener implements Listener {
 
 
         BukkitTask breathTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            Bukkit.getLogger().info("Effect running!");
+            //Bukkit.getLogger().info("Effect running!");
 
 
             long currenTime = System.currentTimeMillis();
@@ -682,7 +728,7 @@ public class MethListener implements Listener {
         border.setWarningDistance((int) (BORDER_HALF_SIZE / (1 - MAX_INTENSITY)));
         p.setWorldBorder(border);
 
-        p.getWorld().playSound(Sound.sound(Key.key("blockingbad:heartbeat"), Sound.Source.MASTER, 1f, 1f));
+        p.playSound(Sound.sound(Key.key("blockingbad", "heartbeat"), Sound.Source.MASTER, 1, 1));
 
 
 
