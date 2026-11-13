@@ -23,6 +23,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
@@ -40,6 +41,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import javax.swing.*;
 import java.util.*;
 
 import static com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes.INT;
@@ -85,7 +87,7 @@ public class MethListener implements Listener {
 
     @EventHandler
     public void onJoinEvent(PlayerJoinEvent e){
-        Bukkit.getLogger().info("Join event detected");
+        // Bukkit.getLogger().info("Join event detected");
         Player p = e.getPlayer();
         UUID playerUUID = p.getUniqueId();
 
@@ -221,7 +223,7 @@ public class MethListener implements Listener {
                         MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 20% ᴄʜᴀɴᴄᴇ ᴏꜰ ʙᴏᴛʜ</color></!i>"),
                         MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* ѕᴛʀᴇɴɢᴛʜ 2 + ѕᴘᴇᴇᴅ 1</color></!i>"),
                         Component.text(""),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#61BADD>ᴏꜰꜰᴇʀѕ ɪɴᴠɪɴᴄɪʙɪʟɪᴛʏ ꜰᴏʀ ᴀ ʙɪᴛ.</color></!i>")
+                        MiniMessage.miniMessage().deserialize("<!i><color:#61BADD>ɴᴜᴍʙ ᴛᴏ ᴅᴀᴍᴀɢᴇ ꜰᴏʀ 10 ѕᴇᴄᴏɴᴅѕ. (ᴇxᴛᴇɴᴅᴀʙʟᴇ)</color></!i>")
 
                 ));
                 meth1.setItemMeta(meta);
@@ -348,32 +350,6 @@ public class MethListener implements Listener {
 
         if (methItem.getType() == Material.AIR) return;
         if (itemManager.getItemId(methItem).equals("n_methamphetamine")){
-
-
-            /*// --- test logic for meth counting ---
-            long fixedCooldown = 10000;
-            Long previousTime = abilityCooldown.get(playerId);
-
-            if (previousTime == null) {
-                abilityCooldown.put(playerId, currentTime);
-            }
-
-            else if (currentTime - previousTime < 10) {
-                if (methCount.get(playerId) == null){
-                    methCount.put(playerId, 0);
-                }
-                else {
-                    Integer previousCount = methCount.get(playerId);
-                    Integer operationCount = previousCount + 1;
-                    methCount.put(playerId, operationCount);
-                }
-
-                abilityCooldown.put(playerId, currentTime);
-            } else {
-                abilityCooldown.put(playerId, currentTime);
-            }
-*/
-            // --- test
 
             p.setCooldown(itemManager.create("n_methamphetamine"), 40);
 
@@ -578,11 +554,14 @@ public class MethListener implements Listener {
         UUID playerID = p.getUniqueId();
         ItemStack methDetect = p.getInventory().getItemInMainHand();
         Long currentTime = System.currentTimeMillis();
+        if (p.hasCooldown(methDetect.getType())) return;
+        Action  rightClickCheck = e.getAction();
+        if (rightClickCheck == Action.RIGHT_CLICK_AIR || rightClickCheck == Action.RIGHT_CLICK_BLOCK) return;
 
         if (itemManager.getItemId(methDetect).equals(null)) return;
         if (!(itemManager.getItemId(methDetect).equals("n_methamphetamine"))) return;
 
-        if (p.hasCooldown(methDetect.getType())) return;
+
 
         p.playSound(Sound.sound(Key.key("blockingbad", "crystal_sniff"), Sound.Source.MASTER, 1, 1));
         methSoundCooldwn.put(playerID, currentTime);
