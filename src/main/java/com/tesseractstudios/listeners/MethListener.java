@@ -18,6 +18,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.WorldBorder;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -72,6 +73,12 @@ public class MethListener implements Listener {
     private final Map<UUID, Long> cooldownCheck = new HashMap<>();
     private final Map<UUID, BukkitTask> breathEffectTask = new HashMap<>();
 
+    private final Map<UUID, BukkitTask> vignetteTask = new HashMap<>();
+
+    private static final double BORDER_HALF_SIZE = 50_000;
+    private static final double MAX_INTENSITY = 0.9;
+    private static final long FADE_TICKS = 200;
+
 
     // -- Custom Crafting Logic wa--
 
@@ -82,7 +89,7 @@ public class MethListener implements Listener {
         Player p = e.getPlayer();
         UUID playerUUID = p.getUniqueId();
 
-        if (calculatedDamage.get(playerUUID) != null) return;
+        if (calculatedDamage.get(playerUUID) == null) return;
         methDamage(p);
 
     }
@@ -91,12 +98,15 @@ public class MethListener implements Listener {
     public void onLeaveEvent(PlayerQuitEvent e){
         Bukkit.getLogger().info("Player Leave event detected");
         Player p = e.getPlayer();
-        UUID playerID = p.getUniqueId();
+        UUID playerId = p.getUniqueId();
 
-        if(!(uuidStore.containsKey(playerID))) return;
+        if(!(uuidStore.containsKey(playerId))) return;
         Bukkit.getLogger().info("Player uuid get done");
-        calculatedDamage.put(playerID, calculatedDamage.get(playerID));
-        damageCooldown.put(playerID, damageCooldown.get(playerID));
+
+        calculatedDamage.put(playerId, calculatedDamage.get(playerId));
+        BukkitTask damageRemove = damageTask.remove(playerId);
+        damageCooldown.put(playerId, 40L);
+        damageRemove.cancel();
     }
 
     @EventHandler
@@ -412,7 +422,7 @@ public class MethListener implements Listener {
 
 
     @EventHandler
-    public void onDamageEvent(EntityDamageEvent e){
+    public void ongeEvent(EntityDamageEvent e){
 
         if (!(e.getEntity() instanceof Player damagedPlayer)) return;
         UUID playerId = damagedPlayer.getUniqueId();
@@ -504,6 +514,8 @@ public class MethListener implements Listener {
             }
 
             p.damage(calculatedDamage.get(p.getUniqueId()));
+            methVignette(p);
+
             calculatedDamage.remove(playerId);
             methCount.put(p.getUniqueId(), null);
 
@@ -583,6 +595,9 @@ public class MethListener implements Listener {
 
         if (calculatedDamage.get(playerId) != null) return;
         damageTask.remove(playerId);
+        breathEffectTask.remove(playerId);
+        BukkitTask vignete = vignetteTask.remove(playerId);
+        vignete.cancel();
     }
 
 
@@ -651,13 +666,6 @@ public class MethListener implements Listener {
             if (calculatedRemainingAir >= 300) calculatedRemainingAir = 299;
 
 
-            /*Long test = cooldownCheck.get(playerId);
-            if (test == null) {
-                sendAir(p);
-                BukkitTask self = breathEffectTask.remove(playerId);
-                if (self != null) self.cancel();
-                return;
-            }*/
 
             EntityData<?> data = new EntityData<>(
                     1,
@@ -678,28 +686,45 @@ public class MethListener implements Listener {
 
         breathEffectTask.put(playerId, breathTask);
 
-
-
-   /* ProtocolManager testmanager = ProtocolLibrary.getProtocolManager();
-
-    public void setTestmanager(ProtocolManager testmanager) {
-        this.testmanager = testmanager;
-
-        testmanager.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.ENTITY_METADATA) {
-            @Override
-            public void onPacketSending(PacketEvent e) {
-                super.onPacketSending(e);
-
-                PacketContainer packet = e.getPacket();
-                List<WrappedDataValue> values = packet.getDataValueCollectionModifier().read(1);
-
-
-
-            }
-        });
-    }*/
-
         // jesus it works, tears in my fricking eyes test
+    }
+
+    // FINAL THING GUYS
+
+
+    public void methVignette(Player p) {
+        UUID playerId = p.getUniqueId();
+        BukkitTask old = vignetteTask.remove(playerId);
+        if (old != null) old.cancel();
+
+        WorldBorder border = Bukkit.createWorldBorder();
+        border.setCenter(p.getLocation());
+        border.setSize(BORDER_HALF_SIZE * 2);
+        border.setWarningDistance((int) (BORDER_HALF_SIZE / (1 - MAX_INTENSITY)));
+        p.setWorldBorder(border);
+
+        p.getWorld().playSound(Sound.sound(Key.key("blockingbad:heartbeat"), Sound.Source.MASTER, 1f, 1f));
+
+
+
+        BukkitTask fade = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+            int elapsed = 0;
+            public void run() {
+                elapsed += 5;
+                if (!p.isOnline() || elapsed >= FADE_TICKS) {
+                    if (p.isOnline()) p.setWorldBorder(null);
+                    BukkitTask self = vignetteTask.remove(playerId);
+                    if (self != null) self.cancel();
+                    return;
+                }
+
+
+                double progress  = (double) elapsed / FADE_TICKS;
+                double intensity = MAX_INTENSITY * Math.pow(1 - progress, 2);
+                border.setWarningDistance((int) (BORDER_HALF_SIZE / (1 - Math.max(0.02, intensity))));
+            }
+        }, 5L, 5L);
+        vignetteTask.put(playerId, fade);
     }
 
 
