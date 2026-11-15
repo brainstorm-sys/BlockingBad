@@ -172,17 +172,36 @@ public class MethListener implements Listener {
 
         // - idk dawg test -, ok works ez
         if(eatitem.getType() == Material.TROPICAL_FISH || eatitem.getType() == Material.COOKED_COD || eatitem.getType() == Material.SALMON || eatitem.getType() == Material.COOKED_SALMON || eatitem.getType() == Material.COD){
-            e.setCancelled(true);
-            eatitem.setAmount(eatitem.getAmount() -1);
+
 
             // nutrition logic
 
             ItemMeta foodMeta = eatitem.getItemMeta();
-            float foodSaturation = foodMeta.getFood().getSaturation();
-            int foodHunger = foodMeta.getFood().getNutrition();
+            if (eatitem.getType() == Material.SALMON){
+                player.setFoodLevel(player.getFoodLevel() + 2);
+                player.setSaturation(player.getSaturation() + 0.4F);
+            }
+            else if (eatitem.getType() == Material.COOKED_SALMON){
+                player.setFoodLevel(player.getFoodLevel() + 6);
+                player.setSaturation(player.getSaturation() + 9.6F);
+            }
+            else if (eatitem.getType() == Material.COD){
+                player.setFoodLevel(player.getFoodLevel() + 2);
+                player.setSaturation(player.getSaturation() + 0.4F);
+            }
+            else if (eatitem.getType() == Material.COOKED_COD){
+                player.setFoodLevel(player.getFoodLevel() + 5);
+                player.setSaturation(player.getSaturation() + 6.0F);
+            }
+            else if (eatitem.getType() == Material.TROPICAL_FISH){
+                player.setFoodLevel(player.getFoodLevel() + 1);
+                player.setSaturation(player.getSaturation() + 0.2F);
+            }
 
-            player.setFoodLevel(foodHunger);
-            player.setSaturation(foodSaturation);
+            e.setCancelled(true);
+            eatitem.setAmount(eatitem.getAmount() -1);
+            player.playSound(Sound.sound(Key.key("minecraft", "entity.generic.eat"), Sound.Source.MASTER, 1.0F, 1.0F));
+
 
 
             if (eatitem.getAmount() <= 0) {
@@ -367,7 +386,7 @@ public class MethListener implements Listener {
         double roll = methRandom.nextDouble();
 
         if (methItem.getType() == Material.AIR) return;
-        if (itemManager.getItemId(methItem).equals("n_methamphetamine")){
+        if (itemManager.getItemId(methItem) != null && itemManager.getItemId(methItem).equals("n_methamphetamine")){
 
             p.setCooldown(itemManager.create("n_methamphetamine"), 40);
 
@@ -441,21 +460,27 @@ public class MethListener implements Listener {
             }
 
             else if (methCount.get(playerId) == 4){
-                Double newDamage = damageValue*20/100 ;
-                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
-                calculatedDamage.put(playerId, 100 - finalDamage);
+                Double newDamage = damageValue*20/100;
+                if (calculatedDamage.get(playerId) != null){
+                    Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                    calculatedDamage.put(playerId, 100 - finalDamage);
+                }
             }
 
             else if (methCount.get(playerId) == 5){
-                Double newDamage = damageValue*50/100 ;
-                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
-                calculatedDamage.put(playerId, 100 - finalDamage);
+                Double newDamage = damageValue*50/100;
+                if (calculatedDamage.get(playerId) != null){
+                    Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                    calculatedDamage.put(playerId, 100 - finalDamage);
+                }
             }
 
             else if (methCount.get(playerId) == 6){
-                Double newDamage = damageValue*80/100 ;
-                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
-                calculatedDamage.put(playerId, 100 - finalDamage);
+                Double newDamage = damageValue*80/100;
+                if (calculatedDamage.get(playerId) != null){
+                    Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                    calculatedDamage.put(playerId, 100 - finalDamage);
+                }
             }
 
             else {
@@ -608,7 +633,7 @@ public class MethListener implements Listener {
         Player p = e.getPlayer();
         UUID playerId = p.getUniqueId();
 
-        if (calculatedDamage.get(playerId) == null) return;
+        if (uuidStore.get(playerId) == null) return;
 
         BukkitTask damageEvent = damageTask.remove(playerId);
         if (damageEvent != null) {
