@@ -83,8 +83,8 @@ public class MethListener implements Listener {
     private static final long FADE_TICKS = 200;
 
 
-    // -- Custom Crafting Logic wa--
 
+    // Join, Leave and death events for safety measures to make things work without buggy
 
     @EventHandler
     public void onJoinEvent(PlayerJoinEvent e){
@@ -113,6 +113,40 @@ public class MethListener implements Listener {
     }
 
     @EventHandler
+    public void onDeath (PlayerDeathEvent e){
+        Player p = e.getPlayer();
+        UUID playerId = p.getUniqueId();
+
+        if (uuidStore.get(playerId) == null) return;
+
+        BukkitTask damageEvent = damageTask.remove(playerId);
+        if (damageEvent != null) {
+            damageEvent.cancel();
+        }
+        BukkitTask breathTask = breathEffectTask.remove(playerId);
+        if (breathTask != null){
+            breathTask.cancel();
+        }
+        BukkitTask vignete = vignetteTask.remove(playerId);
+        if (vignete != null){
+            vignete.cancel();
+        }
+
+        //clearing stuffs
+
+        uuidStore.remove(playerId);
+        methCount.remove(playerId);
+        damageCooldown.remove(playerId);
+        cooldownCheck.remove(playerId);
+        oldTime.remove(playerId);
+        damageTask.remove(playerId);
+        calculatedDamage.remove(playerId);
+    }
+
+
+    // Recipe for Honey Cocoa paste.
+
+    @EventHandler
     public void onGrindStoneClick(PlayerInteractEvent e) {
         Player player = e.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
@@ -134,30 +168,26 @@ public class MethListener implements Listener {
 
         // ---  ---  ---  ---
 
+        if (e.getClickedBlock() == null) return;
+        if (e.getClickedBlock().getType() != Material.GRINDSTONE) return;
+        if (!(itemManager.getItemId(e.getItem()).equals("honeycocoapaste"))) return;
 
-        if (e.getClickedBlock() != null) {
-
-            if (e.getClickedBlock().getType() == Material.GRINDSTONE) {
-                if (itemManager.getItemId(e.getItem()).equals("honeycocoapaste")) {
-                    e.setCancelled(true);
+        e.setCancelled(true);
 
 
-                    var loc = e.getClickedBlock().getLocation().add(0.5, 0.5, 0.5);
+        var loc = e.getClickedBlock().getLocation().add(0.5, 0.5, 0.5);
 
-                    player.getWorld().playSound(
-                            Sound.sound(Key.key("minecraft:block.grindstone.use"), Sound.Source.BLOCK, 1f, 1f),
-                            loc.getX(), loc.getY(), loc.getZ()
-                    );
-                    item.setAmount(item.getAmount() - 1);
-                    if (item.getAmount() <= 0) {
-                        player.getInventory().setItemInMainHand(pa);
-                    }
+        player.getWorld().playSound(
+                Sound.sound(Key.key("minecraft:block.grindstone.use"), Sound.Source.BLOCK, 1f, 1f),
+                loc.getX(), loc.getY(), loc.getZ()
+        );
+        item.setAmount(item.getAmount() - 1);
+        if (item.getAmount() <= 0) {
+            player.getInventory().setItemInMainHand(pa);
+        }
 
-                    else {
-                        player.give(pa);
-                    }
-                }
-            }
+        else {
+            player.give(pa);
         }
     }
 
@@ -168,49 +198,45 @@ public class MethListener implements Listener {
 
         //System.out.println("If this works then lammy's gay");
         Player player = e.getPlayer();
-        ItemStack eatitem = player.getInventory().getItemInMainHand();
+        ItemStack eatItem = player.getInventory().getItemInMainHand();
 
         // - idk dawg test -, ok works ez
-        if(eatitem.getType() == Material.TROPICAL_FISH || eatitem.getType() == Material.COOKED_COD || eatitem.getType() == Material.SALMON || eatitem.getType() == Material.COOKED_SALMON || eatitem.getType() == Material.COD){
+        if(!(eatItem.getType() == Material.TROPICAL_FISH || eatItem.getType() == Material.COOKED_COD || eatItem.getType() == Material.SALMON || eatItem.getType() == Material.COOKED_SALMON || eatItem.getType() == Material.COD)) return;
 
+        // nutrition logic
+        if (eatItem.getType() == Material.SALMON){
+            player.setFoodLevel(player.getFoodLevel() + 2);
+            player.setSaturation(player.getSaturation() + 0.4F);
+        }
+        else if (eatItem.getType() == Material.COOKED_SALMON){
+            player.setFoodLevel(player.getFoodLevel() + 6);
+            player.setSaturation(player.getSaturation() + 9.6F);
+        }
+        else if (eatItem.getType() == Material.COD){
+            player.setFoodLevel(player.getFoodLevel() + 2);
+            player.setSaturation(player.getSaturation() + 0.4F);
+        }
+        else if (eatItem.getType() == Material.COOKED_COD){
+            player.setFoodLevel(player.getFoodLevel() + 5);
+            player.setSaturation(player.getSaturation() + 6.0F);
+        }
+        else if (eatItem.getType() == Material.TROPICAL_FISH){
+            player.setFoodLevel(player.getFoodLevel() + 1);
+            player.setSaturation(player.getSaturation() + 0.2F);
+        }
 
-            // nutrition logic
-
-            ItemMeta foodMeta = eatitem.getItemMeta();
-            if (eatitem.getType() == Material.SALMON){
-                player.setFoodLevel(player.getFoodLevel() + 2);
-                player.setSaturation(player.getSaturation() + 0.4F);
-            }
-            else if (eatitem.getType() == Material.COOKED_SALMON){
-                player.setFoodLevel(player.getFoodLevel() + 6);
-                player.setSaturation(player.getSaturation() + 9.6F);
-            }
-            else if (eatitem.getType() == Material.COD){
-                player.setFoodLevel(player.getFoodLevel() + 2);
-                player.setSaturation(player.getSaturation() + 0.4F);
-            }
-            else if (eatitem.getType() == Material.COOKED_COD){
-                player.setFoodLevel(player.getFoodLevel() + 5);
-                player.setSaturation(player.getSaturation() + 6.0F);
-            }
-            else if (eatitem.getType() == Material.TROPICAL_FISH){
-                player.setFoodLevel(player.getFoodLevel() + 1);
-                player.setSaturation(player.getSaturation() + 0.2F);
-            }
-
-            e.setCancelled(true);
-            eatitem.setAmount(eatitem.getAmount() -1);
-            player.playSound(Sound.sound(Key.key("minecraft", "entity.generic.eat"), Sound.Source.MASTER, 1.0F, 1.0F));
+        e.setCancelled(true);
+        eatItem.setAmount(eatItem.getAmount() -1);
+        player.playSound(Sound.sound(Key.key("minecraft", "entity.generic.eat"), Sound.Source.MASTER, 1.0F, 1.0F));
 
 
 
-            if (eatitem.getAmount() <= 0) {
-                player.getInventory().setItemInMainHand(itemManager.create("fish_bone"));
-            }
+        if (eatItem.getAmount() <= 0) {
+            player.getInventory().setItemInMainHand(itemManager.create("fish_bone"));
+        }
 
-            else {
-                player.give(itemManager.create("fish_bone"));
-            }
+        else {
+            player.give(itemManager.create("fish_bone"));
         }
 
 
@@ -225,62 +251,58 @@ public class MethListener implements Listener {
 
         if (e.getClickedBlock() == null || e.getClickedBlock().getType() == Material.AIR) return;
 
-        ItemStack mainhand = p.getInventory().getItemInMainHand();
-        if (itemManager.getItemId(mainhand) == null) return;
-        if (itemManager.getItemId(mainhand).equals("liquidmeth")){
-            if (e.getClickedBlock().getType() == Material.ANVIL){
-                e.setCancelled(true);
+        ItemStack mainHand = p.getInventory().getItemInMainHand();
+        if (itemManager.getItemId(mainHand) == null) return;
+        if (!(itemManager.getItemId(mainHand).equals("liquidmeth"))) return;
+        if (!(e.getClickedBlock().getType() == Material.ANVIL)) return;
+        e.setCancelled(true);
 
-                //audio
-                var loc = e.getClickedBlock().getLocation().add(0.5, 0.5, 0.5);
+        //audio
+        var loc = e.getClickedBlock().getLocation().add(0.5, 0.5, 0.5);
 
-                p.getWorld().playSound(
-                        Sound.sound(Key.key("minecraft:block.glass.break"), Sound.Source.BLOCK, 1f, 1f),
-                        loc.getX(), loc.getY(), loc.getZ()
-                );
-
-
-                // Customisation
-
-                ItemMeta meta = meth1.getItemMeta();
+        p.getWorld().playSound(
+                Sound.sound(Key.key("minecraft:block.glass.break"), Sound.Source.BLOCK, 1f, 1f),
+                loc.getX(), loc.getY(), loc.getZ()
+        );
 
 
-                meta.lore(List.of(
-                        Component.text(""),
-                        MiniMessage.miniMessage().deserialize("<gradient:#6179DD:#7754F4><!italic>ɪ ᴡ</!italic></gradient><gradient:#7754F4:#1FA4D7><!italic>ᴀѕ ɢᴏᴏᴅ </!italic></gradient><gradient:#1FA4D7:#5BE3EB><!italic>ᴀᴛ ɪᴛ.</!italic></gradient>"),
-                        Component.text(""),
-                        MiniMessage.miniMessage().deserialize("<!i><gradient:#6179DD:#7754F4><shadow:#181E37:1>-</shadow><shadow:#191D38:1>-</shadow><shadow:#1A1C39:1>-</shadow><shadow:#1A1B39:1>-</shadow></gradient><gradient:#7754F4:#1FA4D7><shadow:#1B1A3A:1>-</shadow><shadow:#1C183B:1>-</shadow><shadow:#1D173C:1>-</shadow><shadow:#1D163C:1>-</shadow><shadow:#1E153D:1>-</shadow><shadow:#1B183C:1>-</shadow><shadow:#181B3B:1>-</shadow><shadow:#151E3A:1>-</shadow><shadow:#112039:1>-</shadow><shadow:#0E2338:1>-</shadow><shadow:#0B2637:1>-</shadow></gradient><gradient:#1FA4D7:#5BE3EB><shadow:#082936:1>-</shadow><shadow:#0A2B37:1>-</shadow><shadow:#0C2E37:1>-</shadow><shadow:#0E3038:1>-</shadow><shadow:#113239:1>-</shadow><shadow:#13343A:1>-</shadow><shadow:#15373A:1>-</shadow><shadow:#17393B:1>-</shadow></gradient></!i>"),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 70% ᴄʜᴀɴᴄᴇ ᴏꜰ ɴᴀᴜѕᴇᴀ</color></!i>"),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 50% ᴄʜᴀɴᴄᴇ ᴏꜰ ᴅᴀʀᴋɴᴇѕѕ</color></!i>"),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 20% ᴄʜᴀɴᴄᴇ ᴏꜰ ʙᴏᴛʜ</color></!i>"),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* ѕᴛʀᴇɴɢᴛʜ 2 + ѕᴘᴇᴇᴅ 1</color></!i>"),
-                        Component.text(""),
-                        MiniMessage.miniMessage().deserialize("<!i><color:#61BADD>ɴᴜᴍʙ ᴛᴏ ᴅᴀᴍᴀɢᴇ ꜰᴏʀ 10 ѕᴇᴄᴏɴᴅѕ. (ᴇxᴛᴇɴᴅᴀʙʟᴇ)</color></!i>")
-
-                ));
-                meth1.setItemMeta(meta);
+        // Customisation
+        ItemMeta meta = meth1.getItemMeta();
 
 
-                meth1.setData(DataComponentTypes.FOOD,
-                        FoodProperties.food()
-                                .canAlwaysEat(true)
-                                .nutrition(0)
-                                .saturation(0)
-                                .build()
-                        );
+        meta.lore(List.of(
+                Component.text(""),
+                MiniMessage.miniMessage().deserialize("<gradient:#6179DD:#7754F4><!italic>ɪ ᴡ</!italic></gradient><gradient:#7754F4:#1FA4D7><!italic>ᴀѕ ɢᴏᴏᴅ </!italic></gradient><gradient:#1FA4D7:#5BE3EB><!italic>ᴀᴛ ɪᴛ.</!italic></gradient>"),
+                Component.text(""),
+                MiniMessage.miniMessage().deserialize("<!i><gradient:#6179DD:#7754F4><shadow:#181E37:1>-</shadow><shadow:#191D38:1>-</shadow><shadow:#1A1C39:1>-</shadow><shadow:#1A1B39:1>-</shadow></gradient><gradient:#7754F4:#1FA4D7><shadow:#1B1A3A:1>-</shadow><shadow:#1C183B:1>-</shadow><shadow:#1D173C:1>-</shadow><shadow:#1D163C:1>-</shadow><shadow:#1E153D:1>-</shadow><shadow:#1B183C:1>-</shadow><shadow:#181B3B:1>-</shadow><shadow:#151E3A:1>-</shadow><shadow:#112039:1>-</shadow><shadow:#0E2338:1>-</shadow><shadow:#0B2637:1>-</shadow></gradient><gradient:#1FA4D7:#5BE3EB><shadow:#082936:1>-</shadow><shadow:#0A2B37:1>-</shadow><shadow:#0C2E37:1>-</shadow><shadow:#0E3038:1>-</shadow><shadow:#113239:1>-</shadow><shadow:#13343A:1>-</shadow><shadow:#15373A:1>-</shadow><shadow:#17393B:1>-</shadow></gradient></!i>"),
+                MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 70% ᴄʜᴀɴᴄᴇ ᴏꜰ ɴᴀᴜѕᴇᴀ</color></!i>"),
+                MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 50% ᴄʜᴀɴᴄᴇ ᴏꜰ ᴅᴀʀᴋɴᴇѕѕ</color></!i>"),
+                MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* 20% ᴄʜᴀɴᴄᴇ ᴏꜰ ʙᴏᴛʜ</color></!i>"),
+                MiniMessage.miniMessage().deserialize("<!i><color:#6179DD>* ѕᴛʀᴇɴɢᴛʜ 2 + ѕᴘᴇᴇᴅ 1</color></!i>"),
+                Component.text(""),
+                MiniMessage.miniMessage().deserialize("<!i><color:#61BADD>ɴᴜᴍʙ ᴛᴏ ᴅᴀᴍᴀɢᴇ ꜰᴏʀ 10 ѕᴇᴄᴏɴᴅѕ. (ᴇxᴛᴇɴᴅᴀʙʟᴇ)</color></!i>")
 
-                //
+        ));
+        meth1.setItemMeta(meta);
 
 
-                mainhand.setAmount(mainhand.getAmount() - 1);
-                if(mainhand.getAmount() <= 0){
-                    p.getInventory().setItemInMainHand(meth1);
-                }
-                else {
-                    p.give(meth1);
-                }
+        meth1.setData(DataComponentTypes.FOOD,
+                FoodProperties.food()
+                        .canAlwaysEat(true)
+                        .nutrition(0)
+                        .saturation(0)
+                        .build()
+        );
 
-            }
+        //
+
+
+        mainHand.setAmount(mainHand.getAmount() - 1);
+        if(mainHand.getAmount() <= 0){
+            p.getInventory().setItemInMainHand(meth1);
+        }
+        else {
+            p.give(meth1);
         }
 
     }
@@ -291,6 +313,8 @@ public class MethListener implements Listener {
     // sry if it looks weird and janky, pls do lmk if there can be better logic
     // gonna be my first logic made all by myself without any ai / google help. I'm proud of it.
 
+
+    // yet to clean this code in near future.
     @EventHandler
     public void OnCraft(CraftItemEvent e){
         Player p = (Player) e.getWhoClicked();
@@ -386,44 +410,42 @@ public class MethListener implements Listener {
         double roll = methRandom.nextDouble();
 
         if (methItem.getType() == Material.AIR) return;
-        if (itemManager.getItemId(methItem) != null && itemManager.getItemId(methItem).equals("n_methamphetamine")){
+        if (!(itemManager.getItemId(methItem) != null && itemManager.getItemId(methItem).equals("n_methamphetamine"))) return;
 
-            p.setCooldown(itemManager.create("n_methamphetamine"), 40);
+        p.setCooldown(itemManager.create("n_methamphetamine"), 40);
 
-            // sound effects. I'm pretty bad at this actually
+        // sound effects. I'm pretty bad at this actually
 
-            p.getWorld().playSound(Sound.sound(Key.key("blockingbad:crystal_smell"), Sound.Source.MASTER, 1f, 1f));
+        p.getWorld().playSound(Sound.sound(Key.key("blockingbad:crystal_smell"), Sound.Source.MASTER, 1f, 1f));
 
 
-            //p.sendMessage(MiniMessage.miniMessage().deserialize("<!i><gradient:#6179DD:#7754F4><shadow:#181E37:1>ɴ</shadow><shadow:#191D38:1>ᴜ</shadow><shadow:#191C38:1>ᴍ</shadow><shadow:#1A1B39:1>ʙ</shadow><shadow:#1A1A39:1> </shadow></gradient><gradient:#7754F4:#1FA4D7><shadow:#1B1A3A:1>ᴛ</shadow><shadow:#1C193B:1>ᴏ</shadow><shadow:#1C183B:1> </shadow><shadow:#1D173C:1>ᴅ</shadow><shadow:#1D163C:1>ᴀ</shadow><shadow:#1E153D:1>ᴍ</shadow><shadow:#1C173C:1>ᴀ</shadow><shadow:#19193B:1>ɢ</shadow><shadow:#171C3B:1>ᴇ</shadow><shadow:#141E3A:1> </shadow><shadow:#122039:1>ꜰ</shadow><shadow:#0F2238:1>ᴏ</shadow><shadow:#0D2538:1>ʀ</shadow><shadow:#0A2737:1> </shadow><shadow:#082936:1>1</shadow></gradient><gradient:#1FA4D7:#5BE3EB><shadow:#0A2B37:1>0</shadow><shadow:#0B2C37:1> </shadow><shadow:#0D2E38:1>ѕ</shadow><shadow:#0E2F38:1>ᴇ</shadow><shadow:#103139:1>ᴄ</shadow><shadow:#113339:1>ᴏ</shadow><shadow:#13343A:1>ɴ</shadow><shadow:#14363A:1>ᴅ</shadow><shadow:#16373B:1>ѕ</shadow><shadow:#17393B:1>.</shadow></gradient></!i>"));
+        //p.sendMessage(MiniMessage.miniMessage().deserialize("<!i><gradient:#6179DD:#7754F4><shadow:#181E37:1>ɴ</shadow><shadow:#191D38:1>ᴜ</shadow><shadow:#191C38:1>ᴍ</shadow><shadow:#1A1B39:1>ʙ</shadow><shadow:#1A1A39:1> </shadow></gradient><gradient:#7754F4:#1FA4D7><shadow:#1B1A3A:1>ᴛ</shadow><shadow:#1C193B:1>ᴏ</shadow><shadow:#1C183B:1> </shadow><shadow:#1D173C:1>ᴅ</shadow><shadow:#1D163C:1>ᴀ</shadow><shadow:#1E153D:1>ᴍ</shadow><shadow:#1C173C:1>ᴀ</shadow><shadow:#19193B:1>ɢ</shadow><shadow:#171C3B:1>ᴇ</shadow><shadow:#141E3A:1> </shadow><shadow:#122039:1>ꜰ</shadow><shadow:#0F2238:1>ᴏ</shadow><shadow:#0D2538:1>ʀ</shadow><shadow:#0A2737:1> </shadow><shadow:#082936:1>1</shadow></gradient><gradient:#1FA4D7:#5BE3EB><shadow:#0A2B37:1>0</shadow><shadow:#0B2C37:1> </shadow><shadow:#0D2E38:1>ѕ</shadow><shadow:#0E2F38:1>ᴇ</shadow><shadow:#103139:1>ᴄ</shadow><shadow:#113339:1>ᴏ</shadow><shadow:#13343A:1>ɴ</shadow><shadow:#14363A:1>ᴅ</shadow><shadow:#16373B:1>ѕ</shadow><shadow:#17393B:1>.</shadow></gradient></!i>"));
 
-            //Bukkit.getLogger().info("Cat 3: Meth Detected!");
+        //Bukkit.getLogger().info("Cat 3: Meth Detected!");
 
-            PotionEffect tuffNausea = new PotionEffect(PotionEffectType.NAUSEA, 400, 1);
-            PotionEffect tuffBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 400, 2);
-            PotionEffect speedHack = new PotionEffect(PotionEffectType.SPEED, 100, 1);
-            PotionEffect strengthHack = new PotionEffect(PotionEffectType.STRENGTH, 100, 2);
-            PotionEffect waterHack = new PotionEffect(PotionEffectType.WATER_BREATHING, 999, 1);
+        PotionEffect tuffNausea = new PotionEffect(PotionEffectType.NAUSEA, 400, 1);
+        PotionEffect tuffBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 400, 2);
+        PotionEffect speedHack = new PotionEffect(PotionEffectType.SPEED, 100, 1);
+        PotionEffect strengthHack = new PotionEffect(PotionEffectType.STRENGTH, 100, 2);
+        PotionEffect waterHack = new PotionEffect(PotionEffectType.WATER_BREATHING, 999, 1);
 
-            p.addPotionEffect(speedHack);
-            p.addPotionEffect(strengthHack);
-            p.addPotionEffect(waterHack);
+        p.addPotionEffect(speedHack);
+        p.addPotionEffect(strengthHack);
+        p.addPotionEffect(waterHack);
 
-            if (roll < 0.20){
+        if (roll < 0.20){
+            p.addPotionEffect(tuffNausea);
+            p.addPotionEffect(tuffBlindness);
+        } else {
+            if (methRandom.nextDouble() < 0.70){
                 p.addPotionEffect(tuffNausea);
-                p.addPotionEffect(tuffBlindness);
-            } else {
-                if (methRandom.nextDouble() < 0.70){
-                    p.addPotionEffect(tuffNausea);
-                }
-                else if (methRandom.nextDouble() < 0.50){
-                    p.addPotionEffect(tuffBlindness);
-                }
             }
-
-            uuidStore.put(p.getUniqueId(), "test");
-
+            else if (methRandom.nextDouble() < 0.50){
+                p.addPotionEffect(tuffBlindness);
+            }
         }
+
+        uuidStore.put(p.getUniqueId(), "test");
 
 
     }
@@ -441,52 +463,49 @@ public class MethListener implements Listener {
         UUID playerId = damagedPlayer.getUniqueId();
         Double damageValue = e.getDamage();
 
-        if (uuidStore.containsKey(playerId)){
+        if (!(uuidStore.containsKey(playerId))) return;
 
+        if (methCount.get(playerId) == null || methCount.get(playerId) == 1 || methCount.get(playerId) == 2 || methCount.get(playerId) == 3) {
+            e.setCancelled(true);
 
-            if (methCount.get(playerId) == null || methCount.get(playerId) == 1 || methCount.get(playerId) == 2 || methCount.get(playerId) == 3) {
-                e.setCancelled(true);
-
-                if (calculatedDamage.get(playerId) == null){
-                    calculatedDamage.put(playerId, damageValue);
-                }
-                else {
-                    Double finalDamage = calculatedDamage.get(playerId) + damageValue;
-                    calculatedDamage.put(playerId, finalDamage);
-
-                }
-
-                //Bukkit.getLogger().info("Task 10: MethCount taken and damage updated.");
+            if (calculatedDamage.get(playerId) == null){
+                calculatedDamage.put(playerId, damageValue);
             }
-
-            else if (methCount.get(playerId) == 4){
-                Double newDamage = damageValue*20/100;
-                if (calculatedDamage.get(playerId) != null){
-                    Double finalDamage = calculatedDamage.get(playerId) + newDamage;
-                    calculatedDamage.put(playerId, 100 - finalDamage);
-                }
-            }
-
-            else if (methCount.get(playerId) == 5){
-                Double newDamage = damageValue*50/100;
-                if (calculatedDamage.get(playerId) != null){
-                    Double finalDamage = calculatedDamage.get(playerId) + newDamage;
-                    calculatedDamage.put(playerId, 100 - finalDamage);
-                }
-            }
-
-            else if (methCount.get(playerId) == 6){
-                Double newDamage = damageValue*80/100;
-                if (calculatedDamage.get(playerId) != null){
-                    Double finalDamage = calculatedDamage.get(playerId) + newDamage;
-                    calculatedDamage.put(playerId, 100 - finalDamage);
-                }
-            }
-
             else {
-                e.setCancelled(false);
+                Double finalDamage = calculatedDamage.get(playerId) + damageValue;
+                calculatedDamage.put(playerId, finalDamage);
+
             }
 
+            //Bukkit.getLogger().info("Task 10: MethCount taken and damage updated.");
+        }
+
+        else if (methCount.get(playerId) == 4){
+            Double newDamage = damageValue*20/100;
+            if (calculatedDamage.get(playerId) != null){
+                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                calculatedDamage.put(playerId, 100 - finalDamage);
+            }
+        }
+
+        else if (methCount.get(playerId) == 5){
+            Double newDamage = damageValue*50/100;
+            if (calculatedDamage.get(playerId) != null){
+                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                calculatedDamage.put(playerId, 100 - finalDamage);
+            }
+        }
+
+        else if (methCount.get(playerId) == 6){
+            Double newDamage = damageValue*80/100;
+            if (calculatedDamage.get(playerId) != null){
+                Double finalDamage = calculatedDamage.get(playerId) + newDamage;
+                calculatedDamage.put(playerId, 100 - finalDamage);
+            }
+        }
+
+        else {
+            e.setCancelled(false);
         }
 
     }
@@ -557,10 +576,8 @@ public class MethListener implements Listener {
         Long currentTime = System.currentTimeMillis();
         long initialCooldown = 200;
 
-        if (itemManager.getItemId(offHandItem) != null) {
-            if (itemManager.getItemId(offHandItem).equals("n_methamphetamine")){
-                mainHandItem = itemManager.create("n_methamphetamine");
-            }
+        if (itemManager.getItemId(offHandItem) != null && itemManager.getItemId(offHandItem).equals("n_methamphetamine")) {
+            mainHandItem = itemManager.create("n_methamphetamine");
         }
 
         if(itemManager.getItemId(mainHandItem) == null) return;
@@ -626,37 +643,6 @@ public class MethListener implements Listener {
 
         p.getWorld().playSound(Sound.sound(Key.key("blockingbad:crystal_sniff"), Sound.Source.MASTER, 1f, 1f));
         methSoundCooldwn.put(playerID, currentTime);
-    }
-
-    @EventHandler
-    public void onDeath (PlayerDeathEvent e){
-        Player p = e.getPlayer();
-        UUID playerId = p.getUniqueId();
-
-        if (uuidStore.get(playerId) == null) return;
-
-        BukkitTask damageEvent = damageTask.remove(playerId);
-        if (damageEvent != null) {
-            damageEvent.cancel();
-        }
-        BukkitTask breathTask = breathEffectTask.remove(playerId);
-        if (breathTask != null){
-            breathTask.cancel();
-        }
-        BukkitTask vignete = vignetteTask.remove(playerId);
-        if (vignete != null){
-            vignete.cancel();
-        }
-
-        //clearing stuffs
-
-        uuidStore.remove(playerId);
-        methCount.remove(playerId);
-        damageCooldown.remove(playerId);
-        cooldownCheck.remove(playerId);
-        oldTime.remove(playerId);
-        damageTask.remove(playerId);
-        calculatedDamage.remove(playerId);
     }
 
 
